@@ -7,7 +7,11 @@ Promises Workshop: build the pledge.js deferral-style promise library
 function $Promise() {
    this.state='pending';
    this.handlerGroups=[];
-   this.then=function(success,fail) {
+   this.updateCbs=[];
+   this.then=function(success,fail,update) {
+
+      if (update && typeof update == 'function') this.updateCbs.push(update);
+
       if (typeof success == 'function' && typeof fail == 'function')
          this.handlerGroups.push({successCb: success, errorCb: fail, forwarder: defer() });
       else if (typeof success != 'function' && typeof fail != 'function') {
@@ -20,6 +24,7 @@ function $Promise() {
          this.handlerGroups.push({successCb: null, errorCb: fail, forwarder: defer() });
 
          this.callHandlers(this.value);
+         //return this.handlerGroups[0].forwarder.$promise;
    }
    this.catch=function(errorFn) {
       this.then(null,errorFn);
@@ -68,6 +73,14 @@ Deferral.prototype.reject = function(reason) {
                this.$promise.handlerGroups[x].forwarder.reject(reason);
          }
       }
+   }
+}
+
+Deferral.prototype.notify = function(x) {
+
+   for (var y=0;y<this.$promise.updateCbs.length;y++) {
+         if (this.$promise.state=='pending')
+      this.$promise.updateCbs[y](x);
    }
 }
 
